@@ -998,7 +998,7 @@ class PageCode {
                         const v = (typeof val === 'object' ? JSON.stringify(val).replace(/\"/g, '\'') : val)
                         propsStr += `${typeof val === 'string' ? '' : ':'}${propName}="${v}" `
                     }
-                } 
+                }
             }
         }
         const hasVModel = dirProps.filter(item => item.type === 'v-model').length
@@ -1405,7 +1405,7 @@ class PageCode {
     }
 
     processFuncBody (code) {
-        const encodeCode = (code || '').replace(new RegExp('(<)([^>]+)(>)', 'gi'), (match, p1, p2, p3, offset, string) => `\\${p1}` + p2 + `\\${p3}`)
+        const encodeCode = (code || '').replace(/(<)(\/?)([^>\r\n]+)(>)/gi, (match, p1, p2, p3, p4, offset, string) => `\\${p1}` + `${p2 && `\\${p2}`}` + p3 + `\\${p4}`)
         return replaceFuncKeyword(encodeCode, this.origin, (all, first, second, dirKey, funcStr, funcCode) => {
             return this.handleVarInFunc(dirKey, funcCode) || all
         })
