@@ -12,7 +12,7 @@ module.exports = {
     typescript: true,
     bundleAnalysis: false,
     replaceStatic: true,
-    parallel: 8,
+    parallel: 4,
     copy: {
         from: './lib/client/static',
         to: './lib/client/dist/static'
