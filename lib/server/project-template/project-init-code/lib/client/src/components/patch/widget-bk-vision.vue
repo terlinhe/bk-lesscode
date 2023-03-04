@@ -67,7 +67,9 @@ export default {
       const cdnUrl = 'https://staticfile.qq.com/bkvision/p8e3a7f52d95c45d795cb6f90955f2800/latest/';
 
       const link = document.createElement('link');
-      link.href = cdnUrl + 'main.css';
+      // link.href = cdnUrl + 'main.css';
+      // bk-ui 样式用 .bk-vision-box{}包裹起来，待后续方案优化
+      link.href = 'https://staticfile.qq.com/bkvision/p8e3a7f52d95c45d795cb6f90955f2800/9c57c2d9ed7e41fb8375f7b0b00affc7/main.css';
       link.rel = 'stylesheet';
       document.body.append(link);
 
