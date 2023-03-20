@@ -18,6 +18,16 @@
                 @on-delete="handleUploadReset"
             ></bk-upload>
         </bk-form-item>
+        <bk-form-item label="VUE版本" required property="vueType">
+            <bk-radio-group v-model="formData.vueType" class="project-item-vueType">
+                <bk-radio-button value="VUE2">
+                    VUE2
+                </bk-radio-button>
+                <bk-radio-button value="VUE3">
+                    VUE3
+                </bk-radio-button>
+            </bk-radio-group>
+        </bk-form-item>
         <bk-form-item label="应用名称" required property="projectName" error-display-type="normal">
             <bk-input maxlength="60" v-model.trim="formData.projectName"
                 placeholder="由汉字，英文字母，数字组成，20个字符以内">
@@ -152,3 +162,14 @@
         }
     }
 </script>
+
+<style lang="postcss">
+    .project-item-vueType {
+        .bk-form-radio-button {
+            width: 50%;
+            .bk-radio-button-text {
+                width: 100%;
+            }
+        }
+    }
+</style>
