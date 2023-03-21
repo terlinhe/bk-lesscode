@@ -31,18 +31,14 @@
                 ref="detail"
                 :form.sync="form"
                 :variable-list="variableList"
+                :show-token="true"
             ></form-detail>
-            <form-token
-                :form.sync="form"
-                ref="token"
-            >
-            </form-token>
             <form-summary
                 ref="summary"
                 :form.sync="form"
             ></form-summary>
             <form-monaco
-                class="mt20"
+                class="monaco"
                 ref="monaco"
                 :form.sync="form"
                 :function-list="functionList"
@@ -59,7 +55,6 @@
 <script>
     import mixins from './form-mixins'
     import { mapGetters, mapActions } from 'vuex'
-    import { messageHtmlError } from '@/common/bkmagic'
 
     export default {
         mixins: [mixins],
@@ -136,7 +131,14 @@
                         this.handleClose()
                     }).catch((err) => {
                         if (err?.code === 499) {
-                            messageHtmlError(err.message)
+                            this
+                                .$refs
+                                .monaco
+                                .fixMethod()
+                                .then(() => this.submitAddFuncFromMarket())
+                                .catch(() => {
+                                    this.messageHtmlError(err.message || err)
+                                })
                         } else {
                             this.messageError(err.message || err)
                         }
@@ -183,5 +185,8 @@
         button {
             margin-right: 10px;
         }
+    }
+    .monaco {
+        margin-top: 20px;
     }
 </style>

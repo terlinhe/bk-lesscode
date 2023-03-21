@@ -1,154 +1,148 @@
 <template>
-  <div class="lesscode-bk-vision-container" :id="renderId">
-    <bk-exception v-if="!uid" class="exception-wrap-item exception-part exception-gray" type="404" scene="part">
-      <span>请先配置uid</span>
-    </bk-exception>
-    <div v-else :id="`dashboard-${renderId}`" />
-  </div>
+    <div class="lesscode-bk-vision-container" :id="renderId">
+        <bk-exception v-if="!uid" class="exception-wrap-item exception-part exception-gray" type="404" scene="part">
+            <span>请先配置uid</span>
+        </bk-exception>
+        <div v-else :id="`dashboard-${renderId}`" />
+    </div>
 </template>
 
 <script>
-import { uuid, debounce } from 'shared/util';
+    import { uuid, debounce } from 'shared/util'
 
-export default {
-  name: 'widget-bk-vision',
-  props: {
-    uid: {
-      type: String,
-      default: ''
-    },
-    waterMark: {
-      type: String
-    },
-    isFullScroll: {
-      type: Boolean,
-      default: true
-    },
-    isShowTools: {
-      type: Boolean,
-      default: true
-    },
-    isShowRefresh: {
-      type: Boolean,
-      default: true
-    },
-    isShowTimeRange: {
-      type: Boolean,
-      default: true
-    }
-  },
-  data() {
-    return {
-      renderId: '',
-      apiPrefix: '/api/bkvision/'
-    };
-  },
-  computed: {
-    waterMarkContent() {
-      const arr = [];
-      arr.push(this.waterMark || 'bk-lesscode');
-      console.log(arr, 'wahtc');
-      return {
-        content: arr
-      };
-    }
-  },
-  watch: {
-    uid(val) {
-      this.debounceInit();
-    },
-    waterMark() {
-      this.debounceRender();
-    },
-    isShowTools() {
-      this.debounceRender();
-    },
-    isShowRefresh() {
-      this.debounceRender();
-    },
-    isShowTimeRange() {
-      this.debounceRender();
-    }
-  },
-  created() {
-    this.renderId = uuid(6);
-  },
-  mounted() {
-    this.debounceInit = debounce(this.initPanel);
-    this.debounceRender = debounce(this.renderPanel);
-    if (!window.BkVisionSDK) {
-      this.loadSdk();
-    } else {
-      console.log('bkvision sdk exist');
-      this.initPanel();
-    }
-  },
-  methods: {
-    loadSdk() {
-      const cdnUrl = 'https://staticfile.qq.com/bkvision/p8e3a7f52d95c45d795cb6f90955f2800/latest/';
+    export default {
+        name: 'widget-bk-vision',
+        props: {
+            uid: {
+                type: String,
+                default: ''
+            },
+            waterMark: {
+                type: String
+            },
+            isFullScroll: {
+                type: Boolean,
+                default: true
+            },
+            isShowTools: {
+                type: Boolean,
+                default: true
+            },
+            isShowRefresh: {
+                type: Boolean,
+                default: true
+            },
+            isShowTimeRange: {
+                type: Boolean,
+                default: true
+            }
+        },
+        data () {
+            return {
+                // visionApp: {},
+                renderId: '',
+                apiPrefix: '/api/bkvision/',
+                cdnPrefix: 'https://staticfile.qq.com/bkvision/p8e3a7f52d95c45d795cb6f90955f2800/latest/'
+            }
+        },
+        computed: {
+            dataInfo () {
+                return {
+                    apiPrefix: '/api/bkvision/'
+                    // waterMark: { content: this.watchMark || 'bk-lesscode' },
+                    // isFullScroll: this.isFullScroll,
+                    // isShowTools: this.isShowTools,
+                    // isShowRefresh: this.isShowRefresh,
+                    // isShowTimeRange: this.isShowTimeRange
+                }
+            }
 
-      const link = document.createElement('link');
-      // link.href = cdnUrl + 'main.css';
-      // bk-ui 样式用 .bk-vision-box{}包裹起来，待后续方案优化
-      link.href = 'https://staticfile.qq.com/bkvision/p8e3a7f52d95c45d795cb6f90955f2800/9c57c2d9ed7e41fb8375f7b0b00affc7/main.css';
-      link.rel = 'stylesheet'
-      document.body.append(link);
-
-      const script1 = document.createElement('script');
-      const script2 = document.createElement('script');
-      const script3 = document.createElement('script');
-      script1.src = cdnUrl + 'chunk-vendors.js';
-      script2.src = cdnUrl + 'chunk-bk-magic-vue.js';
-      script3.src = cdnUrl + 'main.js';
-      document.body.append(script1);
-      document.body.append(script2);
-      document.body.append(script3);
-      script3.onload = () => {
-        console.log('sdk load');
-        this.initPanel();
-      };
-    },
-    initPanel() {
-      if (window.BkVisionSDK) {
-        console.log({
-          apiPrefix: '/api/bkvision/',
-          waterMark: this.waterMarkContent,
-          isFullScroll: this.isFullScroll,
-          isShowTools: this.isShowTools,
-          isShowRefresh: this.isShowRefresh,
-          isShowTimeRange: this.isShowTimeRange
-        });
-        console.log(this.uid, 'uid', `#dashboard-${this.renderId}`);
-        this.uid && window.BkVisionSDK.init(`#dashboard-${this.renderId}`, this.uid, {
-          apiPrefix: '/api/bkvision/',
-          waterMark: this.waterMarkContent,
-          isFullScroll: this.isFullScroll,
-          isShowTools: this.isShowTools,
-          isShowRefresh: this.isShowRefresh,
-          isShowTimeRange: this.isShowTimeRange
-        });
-      } else {
-        console.error('sdk 加载异常');
-      }
-    },
-    renderPanel() {
-      if (window.BkVisionSDK) {
-        console.log('render');
-      } else {
-        console.error('sdk 加载异常');
-        this.initPanel();
-      }
+        },
+        watch: {
+            uid (val) {
+                this.debounceInit()
+            },
+            waterMark () {
+                this.debounceRender()
+            },
+            isShowTools () {
+                this.debounceRender()
+            },
+            isShowRefresh () {
+                this.debounceRender()
+            },
+            isShowTimeRange () {
+                this.debounceRender()
+            }
+        },
+        created () {
+            this.renderId = uuid(6)
+        },
+        mounted () {
+            this.debounceInit = debounce(this.initPanel)
+            this.debounceRender = debounce(this.renderPanel)
+            if (!window.BkVisionSDK) {
+                this.loadSdk()
+            } else {
+                console.log('bkvision sdk exist')
+                this.initPanel()
+            }
+        },
+        methods: {
+            async loadSdk () {
+                const link = document.createElement('link')
+                link.href = 'https://staticfile.qq.com/bkvision/p8e3a7f52d95c45d795cb6f90955f2800/9c57c2d9ed7e41fb8375f7b0b00affc7/main.css'
+                link.rel = 'stylesheet'
+                document.body.append(link)
+                await this.loadScript('chunk-vendors.js')
+                await this.loadScript('chunk-bk-magic-vue.js')
+                await this.loadScript('main.js')
+                // await Promise.all([
+                //     // this.loadScript('chunk-vendors.js'),
+                //     // this.loadScript('chunk-bk-magic-vue.js'),
+                //     this.loadScript('main.js')
+                // ])
+                console.log('begin init')
+                this.initPanel()
+            },
+            loadScript (file) {
+                return new Promise((resolve, reject) => {
+                    const url = this.cdnPrefix + file
+                    const script = document.createElement('script')
+                    script.src = url
+                    document.body.append(script)
+                    script.onload = () => {
+                        console.log('sdk load', file)
+                        resolve()
+                    }
+                })
+            },
+            async initPanel () {
+                if (window.BkVisionSDK) {
+                    this.visionApp = this.uid && window.BkVisionSDK.init(`#dashboard-${this.renderId}`, this.uid, this.dataInfo)
+                } else {
+                    console.error('sdk 加载异常')
+                }
+            },
+            renderPanel () {
+                // console.log('rerender')
+                // if (window.BkVisionSDK && this.visionApp) {
+                //     console.log('render', this.visionApp)
+                //     this.visionApp?.update()
+                // } else {
+                //     console.error('sdk 加载异常')
+                //     this.initPanel()
+                // }
+            }
+        }
     }
-  }
-};
 </script>
 
 <style lang="postcss">
-.lesscode-bk-vision-container {
-  pointer-events: all !important;
-
-  * {
-    pointer-events: all !important;
-  }
-}
+    .lesscode-bk-vision-container {
+        pointer-events: all !important;
+        * {
+            pointer-events: all !important;
+        }
+    }
 </style>

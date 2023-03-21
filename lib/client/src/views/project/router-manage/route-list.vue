@@ -1,6 +1,7 @@
 <template>
     <div :class="[$style['routes'], 'page-content']" v-bkloading="{ isLoading: pageLoading, opacity: 1 }">
         <div :class="['info-flexible', $style['inner']]" v-show="!pageLoading">
+            <bk-link :class="[$style['to-link'],'nav-link']" theme="primary" @click="handleCreateLayout">导航布局管理</bk-link>
             <div :class="$style['caption']">
                 <div :class="$style['col']">路由配置</div>
                 <div :class="$style['col']">绑定页面跳转路由</div>
@@ -49,12 +50,27 @@
                                     </div>
                                 </div>
                                 <div :class="[$style['opts'], { [$style['hide']]: editState.route !== null || removeLoading }]">
-                                    <i :class="['bk-icon icon-edit2 ml10', $style['icon']]" @click="handleEditLayoutPath(group)"></i>
+                                    <i :class="['bk-icon icon-edit2 ml10', $style['icon']]"
+                                        @click="handleEditLayoutPath(group)"
+                                        v-bk-tooltips="'编辑'"></i>
                                     <i :class="['bk-icon icon-plus', $style['icon']]"
                                         v-show="editState.type !== 'new'"
                                         v-bk-tooltips="'添加子路由'"
                                         @click="handleAddSubRoute(group)"></i>
+                                    <i :class="['bk-icon icon-eye click-icon',$style['icon-eye']]"
+                                        v-if="group.type !== 'empty' && group.type !== 'mobile-empty' && projectId"
+                                        v-bk-tooltips="'预览'" @click="handlePreview(group)"></i>
                                 </div>
+                            </div>
+                            <div :class="[$style['bind'], { [$style['disabled']]: editState.route !== null || removeLoading }]">
+                                <div :class="$style['bind-name']" @click="handleEditBinding(group.defaultRoute)" v-if="bindState.route !== group.defaultRoute">
+                                    {{getBindDisplayValue(group.defaultRoute)}}
+                                </div>
+                                <bind-route-form v-else
+                                    :selector-props="bindRouteSelectorProps"
+                                    :project-id="projectId"
+                                    @success="handleBindSuccess"
+                                    @cancel="handleBindCancel" />
                             </div>
                         </div>
                     </dt>
@@ -83,7 +99,9 @@
                                                     placeholder="请输入路由名称，回车结束"
                                                 />
                                                 <i class="bk-icon icon-exclamation-circle-shape tips-icon"
-                                                    v-bk-tooltips="editState.error === 1 ? '请检查路径正确性' : '需由数字、字母、下划线、中划线(-)、冒号(:)或反斜杠(/)组成'"></i>
+                                                    v-bk-tooltips="editState.error === 1 ?
+                                                        '请检查路径正确性' :
+                                                        (editState.error === 2 ? '根路由请直接在父级绑定' : '需由数字、字母、下划线、中划线(-)、冒号(:)或反斜杠(/)组成')"></i>
                                             </div>
                                             <div :class="$style['buttons']">
                                                 <bk-button text size="small" theme="primary"
@@ -111,7 +129,10 @@
                                     </div>
                                 </div>
                                 <div :class="[$style['bind'], { [$style['disabled']]: editState.route !== null || removeLoading }]">
-                                    <div :class="$style['bind-name']" @click="handleEditBinding(route)" v-if="bindState.route !== route">
+                                    <div :class="$style['bind-name']" @click="handleEditBinding(route)"
+                                        v-if="bindState.route !== route" v-bk-tooltips="{
+                                            content: getBindDisplayValue(route),
+                                            disabled: !(getBindDisplayValue(route) && getBindDisplayValue(route).length > 29) }">
                                         {{getBindDisplayValue(route)}}
                                     </div>
                                     <bind-route-form v-else
@@ -190,7 +211,8 @@
                 bindRouteSelectorProps: {
                     active: {},
                     routeGroup: [],
-                    pageList: []
+                    pageList: [],
+                    routeMap: {}
                 },
                 routeMap: { 'PC': [], 'MOBILE': [] },
                 pageMap: { 'PC': [], 'MOBILE': [] }
@@ -213,7 +235,8 @@
                 return Boolean(disabled)
             },
             routeFlatList () {
-                const list = this.routeGroup.map(({ children }) => children)
+                const allRouteGroup = Object.values(this.routeMap).reduce((pre, cur) => pre.concat(cur), [])
+                const list = allRouteGroup.map(({ defaultRoute, children }) => [defaultRoute, ...children])
                     .reduce((pre, cur) => pre.concat(cur), [])
                     .map(({ id, layoutPath, path }) => ({
                         id,
@@ -249,20 +272,34 @@
                         this.$store.dispatch('route/getProjectRouteTree', params),
                         this.$store.dispatch('layout/getList', params)
                     ])
-                    this.layoutList = layoutList.map(({ id: layoutId, routePath: layoutPath, layoutType }) => ({ layoutId, layoutPath, layoutType }))
+                    this.layoutList = layoutList.map(({ id: layoutId, routePath: layoutPath, layoutType, type }) => ({ layoutId, layoutPath, layoutType, type }))
 
                     // 补全所有布局模板父路由，便于父路由下没有路由时能快速的创建
-                    this.layoutList.forEach(({ layoutId, layoutPath, layoutType }) => {
+                    this.layoutList.forEach(({ layoutId, layoutPath, layoutType, type }) => {
                         const index = routeGroup.findIndex(item => item.layoutId === layoutId)
                         if (index === -1) {
                             routeGroup.push({
                                 children: [],
                                 layoutId,
                                 layoutPath,
-                                layoutType
+                                layoutType,
+                                type
                             })
                         }
                     })
+
+                    // 布局模板默认路由
+                    routeGroup.forEach((group) => {
+                        const defaultRouteIndex = group.children.findIndex(route => route.path === '')
+                        // 存在默认路由则从children中提出来同时在children中删除，否则构造一个新的path为空的默认路由
+                        if (defaultRouteIndex !== -1) {
+                            group.defaultRoute = group.children[defaultRouteIndex]
+                            group.children.splice(defaultRouteIndex, 1)
+                        } else {
+                            group.defaultRoute = this.getNewSubRoute(group, { isRoot: true, isNew: true })
+                        }
+                    })
+
                     const that = this
                     routeGroup.forEach(function (route) {
                         that.routeMap[route.layoutType].push(route)
@@ -271,6 +308,7 @@
                     this.routeMap['MOBILE'].sort((g1, g2) => g1.layoutId - g2.layoutId)
                     this.routeGroup = this.routeMap[this.type]
                     this.bindRouteSelectorProps.routeGroup = this.routeGroup
+                    this.bindRouteSelectorProps.routeMap = this.routeMap
                 } catch (e) {
                     console.error(e)
                 } finally {
@@ -302,12 +340,7 @@
             handleAddSubRoute (group) {
                 this.unsetBindState()
 
-                const newRoute = {
-                    id: Date.now(),
-                    path: '',
-                    layoutId: group.layoutId,
-                    layoutPath: group.layoutPath
-                }
+                const newRoute = this.getNewSubRoute(group)
                 this.editState.type = 'new'
                 this.editState.value = newRoute.path
                 this.editState.route = newRoute
@@ -382,7 +415,7 @@
                 }
             },
             handleParentRouteInput (value) {
-                this.layoutEditState.error = this.checkRoutePath(value)
+                this.layoutEditState.error = this.checkRoutePath(value, true)
             },
             handleParentRouteCancel () {
                 if (!this.layoutEditState.group) {
@@ -456,11 +489,13 @@
                     data: {
                         pageRoute: {
                             id: route.id,
-                            path: value
+                            path: value,
+                            layoutPath: route.layoutPath
                         },
                         projectId: this.projectId,
                         versionId: this.versionId,
-                        pageId: route.pageId
+                        pageId: route.pageId,
+                        platform: this.type
                     }
                 })
                 return res
@@ -475,7 +510,8 @@
                             layoutPath: route.layoutPath
                         },
                         projectId: this.projectId,
-                        versionId: this.versionId
+                        versionId: this.versionId,
+                        platform: this.type
                     }
                 })
                 return res
@@ -513,12 +549,18 @@
                     }
                 })
             },
-            handleBindSuccess ({ routeId, pageId, redirect, name }) {
-                for (const { children } of this.routeGroup) {
-                    const targetRoute = children.find(route => route.id === routeId)
+            handleBindSuccess ({ routeId, finalRouteId, pageId, redirect, name }) {
+                for (const { defaultRoute, children } of this.routeGroup) {
+                    const fullChildren = [defaultRoute, ...children]
+                    const targetRoute = fullChildren.find(route => route.id === routeId)
                     if (targetRoute) {
                         const changedRoute = { pageId, redirect }
                         changedRoute.pageName = pageId !== -1 ? name : null
+
+                        if (targetRoute.isRoot && targetRoute.isNew) {
+                            delete targetRoute.isNew
+                            targetRoute.id = finalRouteId
+                        }
                         Object.assign(targetRoute, changedRoute)
                         break
                     }
@@ -531,11 +573,23 @@
             handleToggle (group) {
                 this.$set(this.foldeds, group, !this.foldeds[group])
             },
+            getNewSubRoute (group, extra = {}) {
+                return {
+                    id: Date.now() + Math.ceil(Math.random() * 1000),
+                    path: '',
+                    layoutId: group.layoutId,
+                    layoutPath: group.layoutPath,
+                    layoutType: group.layoutType,
+                    pageId: -1,
+                    redirect: null,
+                    ...extra
+                }
+            },
             getDisplayLayoutPath (path) {
                 return this.type === 'MOBILE' && path.startsWith('/mobile') ? path.replace('/mobile', '') : path
             },
             getBindDisplayValue (route) {
-                const { pageId, pageName, redirect } = route
+                const { pageId, pageName, redirect, path } = route
                 // 依据vue-router跳转路由优先
                 if (redirect) {
                     const targetRoute = this.routeFlatList.find(item => item.id === redirect) || {}
@@ -544,14 +598,16 @@
                 if (pageId !== -1) {
                     return pageName
                 }
-                return '未绑定'
+                return path === '' ? '未绑定根路由' : '未绑定'
             },
-            checkRoutePath (value) {
+            checkRoutePath (value, isParent = false) {
                 let error = false
                 try {
                     compile(value)
                     if (!/^[\w-_:\/?]+$/.test(value)) {
                         error = true
+                    } else if (!isParent && value === '/') {
+                        error = 2
                     } else if (/\/{2,}/.test(value)) {
                         error = 1
                     }
@@ -565,6 +621,17 @@
                     const component = this.$refs[id]
                     component[0] && component[0].focus && component[0].focus()
                 })
+            },
+            handleCreateLayout () {
+                this.$router.push({
+                    name: 'layout',
+                    params: {
+                        projectId: this.projectId
+                    }
+                })
+            },
+            handlePreview (group) {
+                window.open(`/preview-template/project/${this.projectId}/${group.layoutId}?type=nav-template`, '_blank')
             }
         }
     }
@@ -573,7 +640,14 @@
 <style lang="postcss" module>
     .routes {
         padding: 30px 24px;
-
+        height: calc(100% - 44px);
+        .to-link {
+            width:calc(100% + 10px);
+            background-color: #fafbfd;
+            padding: 0 6px;
+            margin-left:-6px;
+        }
+    
         .inner {
             padding: 0;
             height: 100%;
@@ -608,7 +682,7 @@
         & + .route-group {
             margin-left: 66px;
           }
-        
+
         &:hover {
              background: #E1ECFF;
              color: #3A84FF;
@@ -697,6 +771,13 @@
                         & + .icon {
                             margin-left: 8px;
                         }
+                    }
+                    .icon-eye{
+                        width: 24px;
+                        height: 24px;
+                        font-size: 15px;
+                        line-height: 24px;
+                        margin-left: 8px ;
                     }
 
                     .add-trigger {
@@ -845,6 +926,15 @@
     }
 
     :global {
+        .nav-link {
+           &.bk-link {
+                justify-content: right;
+               .bk-link-text {
+                    font-size: 12px;
+                    margin-bottom: 5px;
+                }
+            }
+        }
         .edit-route-form {
             position: relative;
             .tips-icon {
@@ -878,4 +968,5 @@
             }
         }
     }
+
 </style>

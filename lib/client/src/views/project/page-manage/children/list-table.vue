@@ -27,9 +27,9 @@
                 type: Object,
                 default: () => ({})
             },
-            isSearch: {
-                type: Boolean,
-                default: false
+            emptyType: {
+                type: String,
+                default: 'noData'
             }
         },
         inject: ['getRelativeTime', 'getFormManagePages'],
@@ -61,6 +61,9 @@
             const handleCreateFormManage = (page) => {
                 emit('create-form', page)
             }
+            const handlerClearSearch = (searchName) => {
+                emit('clear-search', searchName)
+            }
 
             return {
                 handleCreate,
@@ -71,7 +74,8 @@
                 handleEditRoute,
                 handleDelete,
                 handleDownloadSource,
-                handleCreateFormManage
+                handleCreateFormManage,
+                handlerClearSearch
             }
         }
     })
@@ -168,7 +172,7 @@
                             <i class="bk-drag-icon bk-drag-more-dot"></i>
                         </span>
                         <ul class="menu-list" slot="content">
-                            <li v-if="!row.nocodeType"><a href="javascript:;" @click="handleDownloadSource(row.content, row.id, row.styleSetting)">下载源码</a></li>
+                            <li v-if="!row.nocodeType"><a href="javascript:;" @click="handleDownloadSource(row)">下载源码</a></li>
                             <li><a href="javascript:;" @click="handleRename(row)">重命名</a></li>
                             <li v-if="!row.nocodeType"><a href="javascript:;" @click="handleCopy(row)">复制</a></li>
                             <li><a href="javascript:;" @click="handleEditRoute(row)">修改路由</a></li>
@@ -179,10 +183,7 @@
                 </template>
             </bk-table-column>
             <template #empty>
-                <bk-exception type="empty" scene="part">
-                    <div v-if="!isSearch" class="empty-page">暂无页面，<bk-link theme="primary" @click="handleCreate">立即创建</bk-link></div>
-                    <div v-else>无搜索结果</div>
-                </bk-exception>
+                <empty-status :type="emptyType" @clearSearch="handlerClearSearch"></empty-status>
             </template>
         </bk-table>
     </div>
@@ -242,6 +243,9 @@
             height: calc(100% - 43px);
             overflow-y: auto;
             @mixin scroller;
+        }
+        /deep/.bk-table-empty-block{
+            height: 280px;
         }
     }
     .bk-table-row {

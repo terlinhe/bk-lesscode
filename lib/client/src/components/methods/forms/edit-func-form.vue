@@ -34,14 +34,10 @@
                 <form-detail
                     :form.sync="form"
                     :variable-list="variableList"
+                    :show-token="true"
                     ref="detail"
                     form-type="vertical">
                 </form-detail>
-                <form-token
-                    :form.sync="form"
-                    ref="token"
-                    form-type="vertical">
-                </form-token>
                 <form-summary
                     :form.sync="form"
                     ref="summary"
@@ -71,10 +67,15 @@
             >保存</bk-button>
             <bk-button
                 v-if="showSaveUse"
+                class="mr5"
                 :loading="isSubmitting"
                 :disabled="!formChanged"
                 @click="handleSaveChooseFunction"
             >保存并使用</bk-button>
+            <bk-button
+                :loading="isSubmitting"
+                @click="handleClose"
+            >取消</bk-button>
         </footer>
     </main>
 </template>
@@ -134,7 +135,7 @@
             handleSaveChooseFunction () {
                 this.handleSaveFunction().then((form) => {
                     // 触发 save-use 事件
-                    this.$emit('save-use', form.funcCode)
+                    this.$emit('save-use', form)
                     // 关闭弹框
                     this.handleClose()
                 })
@@ -155,7 +156,14 @@
                         resolve(form)
                     } catch (err) {
                         if (err?.code === 499) {
-                            this.messageHtmlError(err.message)
+                            this
+                                .$refs
+                                .monaco
+                                .fixMethod()
+                                .then(() => this.handleSaveFunction())
+                                .catch(() => {
+                                    this.messageHtmlError(err.message || err)
+                                })
                         } else if (err?.content) {
                             this.messageError(err.content || err)
                         } else {

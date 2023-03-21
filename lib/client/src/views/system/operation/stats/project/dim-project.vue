@@ -21,9 +21,13 @@
         </div>
         <div class="data-list" v-bkloading="{ isLoading: fetching.base }">
             <bk-table
+                class="g-hairless-table"
                 v-show="!fetching.base"
                 :data="list"
                 :pagination="pagination"
+                :outer-border="false"
+                :header-border="false"
+                :header-cell-style="{ background: '#f0f1f5' }"
                 @page-change="handlePageChange"
                 @page-limit-change="handlePageLimitChange"
                 @sort-change="handleSortChange">
@@ -46,6 +50,7 @@
                         </template>
                     </template>
                 </bk-table-column>
+                <empty-status slot="empty" :type="emptyType" @clearSearch="handlerClearSearch"></empty-status>
             </bk-table>
         </div>
     </div>
@@ -74,10 +79,11 @@
                 },
                 orderBy: undefined,
                 columns: [
-                    { id: 'projectName', name: '应用名', width: '360' },
-                    { id: 'projectCode', name: '应用ID', width: '360' },
+                    { id: 'projectName', name: '应用名', tooltip: true },
+                    { id: 'createUser', name: '创建者', tooltip: true },
+                    { id: 'projectCode', name: '应用ID', tooltip: true },
                     { id: 'pageCount', name: '应用页面数', sortable: 'custom', dynamic: true, type: 'number' },
-                    { id: 'createTime', name: '创建时间', width: '260', sortable: 'custom', type: 'datetime' }
+                    { id: 'createTime', name: '创建时间', sortable: 'custom', type: 'datetime' }
                 ],
                 filters: {
                     keyword: '',
@@ -85,7 +91,8 @@
                 },
                 fetching: {
                     base: false
-                }
+                },
+                emptyType: 'noData'
             }
         },
         computed: {
@@ -110,6 +117,12 @@
             },
             async getProjectBase () {
                 this.fetching.base = true
+                const dateRanges = this.filters.dateRange?.filter(item => item)
+                if (this.filters.keyword || dateRanges?.length) {
+                    this.emptyType = 'search'
+                } else {
+                    this.emptyType = 'noData'
+                }
                 try {
                     const { data: [list, total] } = await http.post('/operation/stats/project/base', this.params)
                     this.list = list.map((item) => ({
@@ -200,6 +213,11 @@
                 })
 
                 return results
+            },
+            handlerClearSearch () {
+                this.filters.dateRange = []
+                this.filters.keyword = ''
+                this.handleKeywordClear()
             }
         }
     }

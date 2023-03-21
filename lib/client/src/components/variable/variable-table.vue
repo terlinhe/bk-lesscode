@@ -10,7 +10,7 @@
             <bk-table-column label="变量名称" prop="variableName" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="变量标识" prop="variableCode" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="初始类型" prop="valueType" :formatter="valueTypeFormatter" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="默认值" width="300">
+            <bk-table-column label="默认值" width="300" show-overflow-tooltip>
                 <template slot-scope="props">
                     <span v-for="(val, key) in getDisplayDefaultValue(props.row)" :key="key" class="default-value" v-bk-overflow-tips>{{ `【${nameMap[key]}】${val}` }}</span>
                 </template>
@@ -44,13 +44,14 @@
                     >删除</span>
                 </template>
             </bk-table-column>
+            <empty-status slot="empty" :type="emptyType" @clearSearch="handlerClearSearch"></empty-status>
         </bk-table>
         <slot>
             <span class="variable-tip">
                 提示：
                 <br>1. 可以在组件属性和指令的配置面板中使用该变量
                 <br>2. 在函数插槽中可以使用【lesscode.变量标识】唤醒编辑器自动补全功能选择对应变量，来获取或者修改该变量的值
-                <br>3. 在远程函数中，参数 Api Url 和 Api Data 的值可用 <span v-pre>{{变量标识}}</span> 来获取变量值
+                <br>3. 在远程函数中，参数 Api Url 的值可用 <span v-pre>{{变量标识}}</span> 来获取变量值，请求参数中可以通过选择变量的形式获取变量值
             </span>
         </slot>
 
@@ -97,7 +98,7 @@
                 type: Boolean,
                 default: false
             },
-            variableName: {
+            searchTxt: {
                 type: String,
                 default: ''
             }
@@ -131,12 +132,19 @@
 
             filterVariableList () {
                 return (this.variableList || []).filter((variable) => {
-                    return (variable.variableName || '').includes(this.variableName)
+                    return (variable.variableName || '').includes(this.searchTxt) || (variable.variableCode || '').includes(this.searchTxt)
                 })
             },
 
             projectId () {
                 return this.$route.params.projectId
+            },
+
+            emptyType () {
+                if (this.searchTxt?.length > 0) {
+                    return 'search'
+                }
+                return 'noData'
             }
         },
 
@@ -282,6 +290,10 @@
                     }
                 })
                 return tips
+            },
+
+            handlerClearSearch (searchName) {
+                this.$emit('clearSearch', searchName)
             }
         }
     }

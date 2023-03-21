@@ -32,7 +32,7 @@
         </div>
         <div class="variable-list">
             <bk-input
-                placeholder="请输入变量名称进行搜索"
+                placeholder="请输入变量名称或者标识进行搜索"
                 behavior="simplicity"
                 class="variable-input"
                 left-icon="bk-icon icon-search"
@@ -209,7 +209,7 @@
                 })
             }
         },
-        
+
         created () {
             this.getVariableList()
             this.renderVarialbeList = Object.freeze(this.wholeVariableList)
@@ -303,11 +303,15 @@
              */
             handleRowMouseEnter (index, event, row) {
                 const rowEl = event.currentTarget
-                if (rowEl._tippy || !row.useInfo.disabled) return
-                const instance = this.$bkPopover(rowEl, {
+                const targetEl = rowEl?.cells?.[0]?.querySelector('.bk-form-radio')
+                if (!targetEl || targetEl._tippy || !row.useInfo.disabled) return
+                const instance = this.$bkPopover(targetEl, {
                     content: row.useInfo.tips,
                     arrow: true,
-                    extCls: 'variable-disabled-tips'
+                    extCls: 'variable-disabled-tips',
+                    triggerTarget: rowEl,
+                    placement: 'top',
+                    boundary: 'window'
                 })
                 instance.show()
             },
@@ -322,7 +326,7 @@
                     return
                 }
                 this.renderVarialbeList = Object.freeze(this.wholeVariableList.reduce((result, variable) => {
-                    if (variable.variableName.includes(this.searchText)) {
+                    if (variable.variableName.includes(this.searchText) || variable.variableCode.includes(this.searchText)) {
                         result.push(variable)
                     }
                     return result
