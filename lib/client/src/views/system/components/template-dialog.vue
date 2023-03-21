@@ -175,9 +175,11 @@
                 if (!template.checked) {
                     this.formData.templateName = ''
                     this.formData.copyFrom = null
+                    this.formData.vueType = ''
                 } else {
                     this.formData.templateName = template.projectName
                     this.formData.copyFrom = template.id
+                    this.formData.vueType = template.vueType
                 }
             },
             handlePreview (id) {

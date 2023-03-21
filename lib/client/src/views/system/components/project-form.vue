@@ -20,10 +20,10 @@
         </bk-form-item>
         <bk-form-item label="VUE版本" required property="vueType">
             <bk-radio-group v-model="formData.vueType" class="project-item-vueType">
-                <bk-radio-button value="VUE2">
+                <bk-radio-button value="VUE2" :disabled="type !== 'newProject'">
                     VUE2
                 </bk-radio-button>
-                <bk-radio-button value="VUE3">
+                <bk-radio-button value="VUE3" :disabled="type !== 'newProject'">
                     VUE3
                 </bk-radio-button>
             </bk-radio-group>
@@ -57,6 +57,7 @@
     import LayoutThumbList from '@/components/project/layout-thumb-list'
     
     const defaultFormData = {
+        vueType: 'VUE2',
         projectCode: '',
         projectName: '',
         projectDesc: ''
@@ -88,6 +89,13 @@
             return {
                 formData: {},
                 formRules: {
+                    vueType: [
+                        {
+                            required: true,
+                            message: '必选项',
+                            trigger: 'blur'
+                        }
+                    ],
                     projectName: [
                         {
                             regex: /^[a-zA-Z0-9\u4e00-\u9fa5]{1,20}$/,

@@ -24,11 +24,12 @@
     </div>
 </template>
 <script>
-    import MaterialConfig from '@/element-materials/materials'
+    import getMaterial from '@/element-materials/materials'
     import SearchBox from '../../common/search-box'
     import GroupBox from '../../common/group-box'
     import RenderComponent from '../../common/group-box/render-component'
     import RenderIcon from '../../common/group-box/render-icon'
+    import { mapGetters } from 'vuex'
 
     export default {
         components: {
@@ -52,6 +53,11 @@
             }
         },
         computed: {
+            ...mapGetters('project', ['currentVueType']),
+            materialsConfig () {
+                console.log(this.currentVueType, 'vuetype')
+                return getMaterial(this.currentVueType)
+            },
             /**
              * @desc 选中组件库的分组列表
              * @returns { Array }
@@ -62,14 +68,14 @@
                     element: 'elementComponentGroupList',
                     vant: 'vantComponentGroupList'
                 }
-                return MaterialConfig[groupNameMap[this.baseComponent]]
+                return this.materialsConfig[groupNameMap[this.baseComponent]] || []
             },
             /**
              * @desc 选中组件库的组件列表
              * @returns { Array }
              */
             componentList () {
-                return MaterialConfig[this.baseComponent]
+                return this.materialsConfig[this.baseComponent] || []
             }
         },
         watch: {
