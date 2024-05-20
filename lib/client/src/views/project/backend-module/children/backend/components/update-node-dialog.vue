@@ -41,8 +41,16 @@
         components: {
             monaco
         },
+        props: {
+            moduleId: {
+                type: Number,
+                default: 0
+            }
+        },
         data () {
             return {
+                // 点开弹窗时input框初始值， 用于比较需求或子任务是否有修改。
+                preInputStr: '',
                 inputStr: '',
                 textHeight: 75,
                 editontent: window.i18n.t('编辑'),
@@ -89,6 +97,7 @@
             toggleDialog (isShow) {
                 if (isShow) {
                     this.inputStr = this.node?.name
+                    this.preInputStr = this.node?.name
                     setTimeout(() => {
                         this.$refs.inputRef?.focus()
                     })
@@ -96,14 +105,26 @@
             },
             async handleEdit () {
                 try {
+                    let operateData = {
+                        moduleId: this.moduleId
+                    }
+                    if (this.preInputStr !== this.inputStr) {
+                        operateData.payloadData = JSON.stringify({
+                            con: this.inputStr,
+                            prevCon: this.preInputStr
+                        })
+                    }
                     if (this.node?.type === 'story') {
+                        operateData.operateType = 'UPDATE_STORY'
                         const data = {
                             story: this.inputStr,
                             uuid: this.node?.session_id,
                             app_name: this.node?.app_name,
+                            operateData
                         }
                         await this.$store.dispatch('saasBackend/patchModuleStory', data)
                     } else {
+                        operateData.operateType = 'UPDATE_TASK'
                         const builderItem = this.saasBuilderList.find(item => item.session_id === this.node?.saas_builder)
                         if (builderItem) {
                             const nodes = builderItem.nodes
@@ -120,8 +141,8 @@
                                 builderDetail: builderItem,
                                 uuid: builderItem.session_id,
                                 story: builderItem.name,
-                                app_name: this.node?.app_name
-
+                                app_name: this.node?.app_name,
+                                operateData
                             }
                             await this.$store.dispatch('saasBackend/updateModuleStory', data)
                         }

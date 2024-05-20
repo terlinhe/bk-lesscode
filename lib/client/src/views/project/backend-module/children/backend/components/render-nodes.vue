@@ -20,7 +20,7 @@
         <section v-show="storyList.length" class="nodes-container" style="background-color: #F5F7FA;">
         </section>
         <render-side-slider />
-        <update-node-dialog />
+        <update-node-dialog :module-id="moduleId" />
     </section>
 </template>
 
@@ -264,11 +264,11 @@
                 let maxX = 0
                 const finalTasks = []
 
-                // 记录最多的一列node or step总和
-                let maxStepCount = 0
                 data.tasks.forEach((task) => {
                     x = -275
                     let maxTask = 0
+                    // 记录最多的一列node or step总和
+                    let maxStepCount = 0
 
                     task.forEach((item, index) => {
                         x += (parentNodeWidth + parentNodeOffset)
@@ -590,7 +590,7 @@
         .refresh-entry {
             z-index: 10;
             position: absolute;
-            right: 12px;
+            right: 16px;
             top: 12px;
             cursor: pointer;
             font-size: 12px;

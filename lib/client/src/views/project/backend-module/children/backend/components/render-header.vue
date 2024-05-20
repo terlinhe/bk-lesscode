@@ -1,7 +1,11 @@
 <template>
     <section class="render-header">
         <span class="header-title">{{ currentModule.moduleCode }}</span>
-
+        <div class="operate-entry" @click="() => showOperateLog = true">
+            <i class="bk-drag-icon bk-drag-audit"></i>
+            <span>{{ $t('操作记录') }}</span>
+        </div>
+        <operate-log :is-show="showOperateLog" @close="() => showOperateLog = false"/>
         <section class="header-input">
             <section
                 :style="{
@@ -40,8 +44,12 @@
     import { useStore } from '@/store'
     import { uuid } from 'shared/util'
     import useResourceLock from '@/common/use-resource-lock'
+    import OperateLog from './operate-log'
 
     export default {
+        components: {
+            OperateLog
+        },
         props: {
             currentModule: {
                 type: Object,
@@ -58,6 +66,8 @@
             const userInput = ref('')
             const textHeight = ref(54)
             const isLoading = ref(false)
+
+            const showOperateLog = ref(false)
 
             const {
                 check: canvasLockCheck,
@@ -178,6 +188,7 @@
                 isLoading,
                 isExecuting,
                 isLocked,
+                showOperateLog,
                 handleGenerate
             }
         }
@@ -190,13 +201,25 @@
     height: 146px;
     background: #FFFFFF;
     border: 1px solid #DCDEE5;
-    padding: 18px 24px 24px;
+    padding: 18px 16px 24px 24px;
 }
 .header-title {
     font-weight: 700;
     font-size: 14px;
     line-height: 22px;
     color: #313238;
+}
+.operate-entry {
+    float: right;
+    font-size: 12px;
+    line-height: 22px;
+    color: #3A84FF;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    .bk-drag-audit {
+        margin-right: 4px;
+    }
 }
 .header-input {
     display: flex;
