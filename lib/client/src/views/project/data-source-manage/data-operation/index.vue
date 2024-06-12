@@ -92,23 +92,6 @@
                     </span>
                 </bk-alert>
                 <bk-alert
-                    v-else-if="!projectInfo.token"
-                    type="warning"
-                    class="mb10"
-                >
-                    <span
-                        slot="title"
-                        class="data-base-tips"
-                    >
-                        需
-                        <bk-link
-                            :href="`/project/${projectInfo.id}/credential`"
-                            target="href"
-                        >生成凭证</bk-link>
-                        ，用于预览环境使用绑定的蓝鲸应用身份调用接口
-                    </span>
-                </bk-alert>
-                <bk-alert
                     v-else
                     type="warning"
                     class="mb10"
@@ -142,36 +125,71 @@
                 v-show="queryType === 'sql-query'"
                 ref="sqlQueryRef"
                 :sql="sqlQuery"
+                :table-list="tableList"
+                :bk-base-biz-list="bkBaseBizList"
+                :data-source-type="dataSourceType"
                 @change="handleSqlChange"
             />
 
             <section class="operation-button">
-                <bk-button
-                    theme="primary"
-                    class="mr6"
-                    :loading="isQueryLoading"
-                    @click="handleQuery"
+                <span
+                    v-bk-tooltips="{
+                        disabled: !isEmptySql,
+                        content: '填写 SQL 后，可执行查询'
+                    }"
                 >
-                    查询
-                </bk-button>
-                <bk-button
+                    <bk-button
+                        theme="primary"
+                        class="mr6"
+                        :disabled="isEmptySql"
+                        :loading="isQueryLoading"
+                        @click="handleQuery"
+                    >
+                        查询
+                    </bk-button>
+                </span>
+                <span
                     v-if="queryType === 'json-query'"
-                    class="mr6"
-                    @click="handleShowSql"
+                    v-bk-tooltips="{
+                        disabled: isSuccessfulQuery,
+                        content: '成功查询后，可查看 SQL'
+                    }"
                 >
-                    查看 SQL
-                </bk-button>
-                <bk-button
-                    class="mr6"
-                    @click="handleGenApi"
+                    <bk-button
+                        class="mr6"
+                        :disabled="!isSuccessfulQuery"
+                        @click="handleShowSql"
+                    >
+                        查看 SQL
+                    </bk-button>
+                </span>
+                <span
+                    v-bk-tooltips="{
+                        disabled: isSuccessfulQuery,
+                        content: '成功查询后，可生成 API'
+                    }"
                 >
-                    生成 API
-                </bk-button>
-                <bk-button
-                    @click="handleGenFunction"
+                    <bk-button
+                        class="mr6"
+                        :disabled="!isSuccessfulQuery"
+                        @click="handleGenApi"
+                    >
+                        生成 API
+                    </bk-button>
+                </span>
+                <span
+                    v-bk-tooltips="{
+                        disabled: isSuccessfulQuery,
+                        content: '成功查询后，可生成函数'
+                    }"
                 >
-                    生成函数
-                </bk-button>
+                    <bk-button
+                        :disabled="!isSuccessfulQuery"
+                        @click="handleGenFunction"
+                    >
+                        生成函数
+                    </bk-button>
+                </span>
             </section>
 
             <section class="operation-result">
@@ -191,13 +209,15 @@
                 </bk-tab>
                 <query-result
                     v-show="queryTab === 'query-result'"
+                    ref="queryResultRef"
                     :query-type="queryType"
                     :condition="conditionQuery"
                     :sql="sqlQuery"
                     :table-list="tableList"
                     :bk-base-biz-list="bkBaseBizList"
                     :data-source-type="dataSourceType"
-                    ref="queryResultRef"
+                    :is-successful-query="isSuccessfulQuery"
+                    @changeQueryStatus="changeQueryStatus"
                 />
                 <query-history
                     v-if="queryTab === 'query-history'"
@@ -233,8 +253,7 @@
     </article>
 </template>
 
-<script lang="ts">
-    import dayjs from 'dayjs'
+<script>
     import router from '@/router'
     import store from '@/store'
     import RenderHeader from '../data-table/common/header'
@@ -250,12 +269,14 @@
     import {
         defineComponent,
         ref,
+        computed,
         onBeforeMount
     } from '@vue/composition-api'
     import {
         API_METHOD,
         parseValue2Scheme,
-        parseValue2UseScheme
+        parseValue2UseScheme,
+        getParamFromApi
     } from 'shared/api'
     import {
         FUNCTION_TYPE
@@ -263,6 +284,9 @@
     import {
         generateSqlByCondition
     } from 'shared/data-source'
+    import {
+        isEmpty
+    } from 'shared/util'
 
     export default defineComponent({
         components: {
@@ -287,15 +311,16 @@
             const queryResultRef = ref()
             // tab 展示
             const dataSourceType = ref('preview')
-            const queryType = ref<string>('json-query')
-            const queryTab = ref<string>('query-result')
+            const queryType = ref('json-query')
+            const queryTab = ref('query-result')
             // 项目数据
             const projectInfo = ref({
                 id: '',
                 appCode: '',
                 moduleCode: '',
-                token: ''
             })
+            // 是否成功查询
+            const isSuccessfulQuery = ref(false)
             // 查询相关状态
             const conditionQuery = ref()
             const sqlQuery = ref('')
@@ -319,8 +344,18 @@
                 sql: ''
             })
 
-            const toggleQueryType = (val: string): void => {
+            // 计算变量
+            const isEmptySql = computed(() => {
+                return queryType.value === 'sql-query' && isEmpty(sqlQuery.value)
+            })
+
+            // 方法
+            const toggleQueryType = (val) => {
                 queryType.value = val
+            }
+
+            const changeQueryStatus = (val) => {
+                isSuccessfulQuery.value = val
             }
 
             // 选择数据源
@@ -346,11 +381,15 @@
             // 查询条件发生变化
             const handleConditionChange = (val) => {
                 conditionQuery.value = val
+                // 查询条件发生变化以后，需要重置成功查询状态
+                changeQueryStatus(false)
             }
 
             // 查询 sql 发生变化
             const handleSqlChange = (val) => {
                 sqlQuery.value = val
+                // 查询条件发生变化以后，需要重置成功查询状态
+                changeQueryStatus(false)
             }
 
             // bk-base 数据发生变化
@@ -447,6 +486,11 @@
             const handleGenFunction = () => {
                 validate()
                     .then(() => {
+                        const apiBody = parseValue2UseScheme({
+                            sql: getFinalySql(),
+                            dataSourceType: dataSourceType.value
+                        })
+                        const funcParams = getParamFromApi(null, apiBody, 'post')
                         funcData.value.isShow = true
                         funcData.value.form = {
                             projectId,
@@ -455,10 +499,8 @@
                             funcMethod: API_METHOD.POST,
                             funcBody: 'return res\r\n',
                             funcApiUrl: '/api/data-source/user/queryBySql',
-                            apiBody: parseValue2UseScheme({
-                                sql: getFinalySql(),
-                                dataSourceType: dataSourceType.value
-                            })
+                            funcParams,
+                            apiBody
                         }
                     })
                     .catch((err) => {
@@ -535,16 +577,12 @@
 
             // 获取项目相关信息
             const getProjectInfo = () => {
-                return Promise
-                    .all([
-                        store.dispatch('project/detail', { projectId }),
-                        store.dispatch('functions/getTokenList', projectId)
-                    ])
-                    .then(([project, token]) => {
+                return store
+                    .dispatch('project/detail', { projectId })
+                    .then((project) => {
                         projectInfo.value.id = project.id
                         projectInfo.value.appCode = project.appCode
                         projectInfo.value.moduleCode = project.moduleCode
-                        projectInfo.value.token = dayjs(token?.data?.[0]?.expiresTime).isAfter(dayjs()) ? token?.data?.[0] : ''
                     })
             }
 
@@ -570,6 +608,7 @@
                 queryType,
                 queryTab,
                 projectInfo,
+                isSuccessfulQuery,
                 conditionQuery,
                 sqlQuery,
                 isQueryLoading,
@@ -579,7 +618,9 @@
                 apiData,
                 funcData,
                 sqlData,
+                isEmptySql,
                 toggleQueryType,
+                changeQueryStatus,
                 chooseDataSource,
                 handleConditionChange,
                 handleSqlChange,

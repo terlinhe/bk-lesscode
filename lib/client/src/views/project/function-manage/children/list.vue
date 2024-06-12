@@ -19,7 +19,7 @@
 
             <bk-table
                 class="function-table"
-                :data="functionList"
+                :data="computedFunctionList"
                 :outer-border="false"
                 :header-border="false"
                 :header-cell-style="{ background: '#f0f1f5' }"
@@ -46,7 +46,7 @@
                     </template>
                 </bk-table-column>
                 <bk-table-column label="更新人" prop="updateUser"></bk-table-column>
-                <bk-table-column label="更新时间" prop="updateTime" :formatter="timeFormatter" show-overflow-tooltip sortable></bk-table-column>
+                <bk-table-column label="更新时间" prop="updateTime" min-width="100px" :formatter="timeFormatter" show-overflow-tooltip sortable></bk-table-column>
                 <bk-table-column label="引用" show-overflow-tooltip>
                     <template slot-scope="props">
                         <span
@@ -70,7 +70,13 @@
                         >删除</span>
                     </template>
                 </bk-table-column>
+                <empty-status slot="empty" :type="emptyType" @clearSearch="handlerClearSearch"></empty-status>
             </bk-table>
+
+            <span class="function-tips">
+                提示：
+                <br>如果此处编辑的函数被预览页面使用，编辑函数后需要刷新预览页面让修改立即生效
+            </span>
         </section>
 
         <edit-func-sideslider
@@ -163,6 +169,12 @@
             computedFunctionList () {
                 const searchReg = new RegExp(this.searchFunStr, 'i')
                 return this.functionList.filter((func) => searchReg.test(func.funcName))
+            },
+            emptyType () {
+                if (this.searchFunStr.length > 0) {
+                    return 'search'
+                }
+                return 'noData'
             }
         },
 
@@ -307,7 +319,7 @@
 
             exportFunction () {
                 const versionName = this.versionId ? `-${this.versionName}` : ''
-                downloadFile(getExportFunction(this.selectionData), `lesscode-${this.projectId}${versionName}-func.json`)
+                downloadFile(getExportFunction(this.selectionData), `bklesscode-${this.projectId}${versionName}-func.json`)
             },
 
             exportDemoFunction () {
@@ -351,8 +363,6 @@
                     }).catch((err) => {
                         if (err?.code === 499) {
                             this.messageHtmlError(err.message)
-                        } else {
-                            this.messageError(err.message || err)
                         }
                     }).finally(() => {
                         this.isUploading = false
@@ -360,6 +370,9 @@
                 } catch (err) {
                     this.$bkMessage({ theme: 'error', message: err.message || err })
                 }
+            },
+            handlerClearSearch (searchEmpty) {
+                this.searchFunStr = searchEmpty
             }
         }
     }
@@ -394,11 +407,6 @@
             }
         }
         .function-table {
-            height: calc(100% - 46px);
-            /deep/ .bk-table-body-wrapper {
-                height: calc(100% - 43px);
-                overflow-y: auto;
-            }
             th.is-leaf {
                 border: none;
             }
@@ -412,6 +420,13 @@
                 text-overflow: ellipsis;
                 white-space: normal;
             }
+        }
+        .function-tips {
+            display: inline-block;
+            margin-top: 10px;
+            color: #979ba5;
+            font-size: 12px;
+            line-height: 16px;
         }
         .table-btn {
             color: #3a84ff;

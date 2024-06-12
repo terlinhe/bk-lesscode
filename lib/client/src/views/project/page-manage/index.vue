@@ -59,13 +59,14 @@
                     <sort-select v-model="sort" @change="handleSortChange" />
                 </div>
             </div>
+            <!-- 应用页面列表 -->
             <div :class="['pages-body', { 'is-empty': !renderList.length }]">
                 <component
                     :is="listComponent"
                     :page-list="renderList"
                     :route-map="routeMap"
                     :nocode-type-map="nocodeTypeMap"
-                    :is-search="isSearch"
+                    :empty-type="emptyType"
                     @create="handleCreate"
                     @preview="handlePreview"
                     @edit="handleEditPage"
@@ -75,6 +76,7 @@
                     @delete="handleDelete"
                     @download="handleDownloadSource"
                     @create-form="handleCreateFormManage"
+                    @clear-search="handlerClearSearch"
                 />
             </div>
             <page-dialog ref="pageDialog" :action="action" :current-name="currentName" :refresh-list="getPageList"></page-dialog>
@@ -138,7 +140,8 @@
                     { name: 'list', icon: 'display-list', title: '列表' }
                 ],
                 listComponent: listCard.name,
-                sort: 'default'
+                sort: 'default',
+                emptyType: 'noData'
             }
         },
         provide () {
@@ -173,15 +176,12 @@
             },
             hasMobilePage () {
                 return this.pageList.find(page => page.pageType === 'MOBILE')
-            },
-            isSearch () {
-                return this.keyword?.length > 0
             }
         },
         watch: {
             keyword (val) {
                 if (!val) {
-                    this.handleSearch(false)
+                    this.handleSearch(true)
                 }
             }
         },
@@ -249,8 +249,8 @@
                 this.$refs.pageDialog.dialog.formData.pageRoute = ''
                 this.$refs.pageDialog.dialog.visible = true
             },
-            async handleDownloadSource (targetData, pageId, styleSetting) {
-                if (!targetData) {
+            async handleDownloadSource (page) {
+                if (!page.content) {
                     this.$bkMessage({
                         theme: 'error',
                         message: '该页面为空页面，无源码生成'
@@ -260,13 +260,13 @@
                 this.$store.dispatch('vueCode/getPageCode', {
                     projectId: this.projectId,
                     versionId: this.versionId,
-                    pageId,
-                    styleSetting,
+                    pageId: page.id,
+                    styleSetting: page.styleSetting,
                     from: 'download_page'
                 }).then((res) => {
                     const downlondEl = document.createElement('a')
                     const blob = new Blob([res])
-                    downlondEl.download = `bklesscode-${pageId}.vue`
+                    downlondEl.download = `bklesscode-page-${page.pageCode}.vue`
                     downlondEl.href = URL.createObjectURL(blob)
                     downlondEl.style.display = 'none'
                     document.body.appendChild(downlondEl)
@@ -400,14 +400,17 @@
                 this.$refs.downloadDialog.isShow = true
                 this.$refs.downloadDialog.projectId = this.projectId
                 this.$refs.downloadDialog.version = this.versionId ? `${this.currentVersion.id}:${this.currentVersion.version}` : ''
+                this.$refs.downloadDialog.projectCode = this.currentProject.projectCode
                 this.$refs.downloadDialog.projectName = this.currentProject.projectName
             },
             handleSearch (clear = false) {
                 if (clear) {
                     this.keyword = ''
                     this.renderList = this.pageList.slice()
+                    this.emptyType = 'noData'
                 } else {
                     this.renderList = this.pageList.filter(item => item.pageName.toLowerCase().indexOf(this.keyword.toLowerCase()) !== -1)
+                    this.emptyType = 'search'
                 }
                 this.handleTypeChange()
 
@@ -465,6 +468,9 @@
             },
             sortByUpdateTime () {
                 this.renderList.sort((pageA, pageB) => new Date(pageB.updateTime).getTime() - new Date(pageA.updateTime).getTime())
+            },
+            handlerClearSearch (searchName) {
+                this.keyword = searchName
             }
         }
     }

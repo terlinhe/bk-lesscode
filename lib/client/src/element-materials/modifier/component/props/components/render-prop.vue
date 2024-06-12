@@ -16,6 +16,7 @@
             :options="variableSelectOptions"
             :value="formData"
             :show-content="isShowProp"
+            :describe="describe"
             @change="handleVariableFormatChange">
             <template v-slot:title>
                 <div class="prop-name" @click="toggleShowProp">
@@ -159,6 +160,7 @@
     import TypePagination from './strategy/pagination.vue'
     import TypeRouteList from './strategy/route-list.vue'
     import TypeChartColor from './strategy/chart-color-set.vue'
+    import TypeRequestSelect from './strategy/request-select.vue'
 
     const getRealValue = (type, target) => {
         if (type === 'object') {
@@ -276,11 +278,13 @@
                     'srcset': TypeList,
                     'pagination': TypePagination,
                     'route': TypeRouteList,
-                    'chartColor': TypeChartColor
+                    'chartColor': TypeChartColor,
+                    'request-select': TypeRequestSelect
                 }
 
                 const typeMap = {
                     'array': 'json',
+                    'areatext': 'areatext',
                     'boolean': 'boolean',
                     'column': 'column',
                     'size': 'size',
@@ -320,7 +324,8 @@
                     'srcset': 'srcset',
                     'pagination': 'pagination',
                     'route': 'route',
-                    'chartColor': 'chartColor'
+                    'chartColor': 'chartColor',
+                    'request-select': 'request-select'
                 }
 
                 let realType = config.type

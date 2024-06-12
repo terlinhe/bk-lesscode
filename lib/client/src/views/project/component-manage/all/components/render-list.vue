@@ -2,13 +2,14 @@
     <div class="render-list">
         <div class="header">
             <bk-button theme="primary" @click="handleShowOperation">新建</bk-button>
+            <bk-button style="margin-left: 10px;" :disabled="!data.length" @click="handleExport">导出</bk-button>
             <div class="header-right">
                 <type-select class="type-select" @select-change="handleSelectChange"></type-select>
-                <a class="download-demo" href="/help/custom" target="_blank">组件开发指引</a>
             </div>
         </div>
         <div class="component-list-content" v-bkloading="{ isLoading }">
             <bk-table
+                class="g-hairless-table"
                 :outer-border="false"
                 :header-border="false"
                 :header-cell-style="{ background: '#f0f1f5' }"
@@ -31,10 +32,19 @@
                     </template>
                 </bk-table-column>
                 <bk-table-column label="组件ID" prop="type" align="left" show-overflow-tooltip />
-                <bk-table-column label="所属分类" prop="category" align="left" width="120" show-overflow-tooltip />
-                <bk-table-column label="公开范围" prop="scope" align="left" show-overflow-tooltip>
+                <bk-table-column label="所属分类" prop="category" align="left" show-overflow-tooltip>
                     <template slot-scope="{ row }">
                         <div class="component-scope">
+                            <span class="scope-name">
+                                {{ row.category }}
+                            </span>
+                            <i class="bk-icon icon-edit2" @click="handleCategory(row)" />
+                        </div>
+                    </template>
+                </bk-table-column>
+                <bk-table-column label="公开范围" prop="scope" align="left" show-overflow-tooltip>
+                    <template slot-scope="{ row }">
+                        <div class="component-scope" :title="getScopeName(getPublicScope(row.id)[0])">
                             <span class="scope-name">
                                 {{ getScopeName(getPublicScope(row.id)[0]) }}
                             </span>
@@ -50,7 +60,7 @@
                         </div>
                     </template>
                 </bk-table-column>
-                <bk-table-column label="更新时间" prop="updateTime" align="left" width="160" />
+                <bk-table-column label="更新时间" prop="updateTime" align="left" width="160" :formatter="timeFormatter" show-overflow-tooltip />
                 <bk-table-column label="更新人" prop="updateUser" align="left" width="120" show-overflow-tooltip />
                 <bk-table-column label="操作" prop="statusText" align="left" width="200">
                     <template slot-scope="{ row }">
@@ -59,14 +69,7 @@
                         <bk-button v-if="row.status === 1" text @click="handleOnline(row)">上架</bk-button>
                     </template>
                 </bk-table-column>
-                <bk-exception slot="empty" class="component-list-empty" type="empty">
-                    <div style="font-size: 12px">
-                        暂无组件
-                        <span>
-                            ，<bk-button text theme="primary" @click="handleShowOperation">立即创建</bk-button>
-                        </span>
-                    </div>
-                </bk-exception>
+                <empty-status slot="empty"></empty-status>
             </bk-table>
         </div>
         <operation
@@ -82,6 +85,11 @@
             :is-show.sync="isShowPublicScope"
             :data="currentScopeData"
             @on-update="fetchData" />
+        <public-category
+            :is-show.sync="isShowCategory"
+            :data="currentCategoryDate"
+            @on-update="fetchData"
+            @on-add="handleComponentAdd" />
     </div>
 </template>
 <script>
@@ -89,7 +97,9 @@
     import Operation from './operation'
     import VersionLog from '@/components/version-log'
     import PublicScope from '../../public-scope'
+    import PublicCategory from '../../public-category'
     import typeSelect from '@/components/project/type-select'
+    import dayjs from 'dayjs'
 
     export default {
         name: '',
@@ -97,7 +107,8 @@
             Operation,
             VersionLog,
             PublicScope,
-            typeSelect
+            typeSelect,
+            PublicCategory
         },
         props: {
             categoryId: {
@@ -110,6 +121,7 @@
                 isShowOperation: false,
                 isShowVersionLog: false,
                 isShowPublicScope: false,
+                isShowCategory: false,
                 currentVerionData: {},
                 data: [],
                 publicScope: {},
@@ -118,6 +130,7 @@
                     scope: [],
                     comp: {}
                 },
+                currentCategoryDate: {},
                 pagination: {
                     count: 0,
                     limit: 10,
@@ -169,6 +182,9 @@
                 this.componentId = 0
                 this.isShowOperation = true
                 this.editInfo = {}
+            },
+            async handleExport () {
+                window.open(`/api/component/export?belongProjectId=${this.$route.params.projectId}&compType=${this.compType}`, '_self')
             },
             handleVersionDetail (comp) {
                 this.currentVerionData = comp
@@ -242,6 +258,13 @@
                 this.pagination.current = 1
                 this.pagination.limit = limit
                 this.fetchData()
+            },
+            timeFormatter (obj, con, val) {
+                return val ? dayjs(val).format('YYYY-MM-DD HH:mm:ss') : ''
+            },
+            handleCategory (category) {
+                this.currentCategoryDate = category
+                this.isShowCategory = true
             }
         }
     }
@@ -257,10 +280,6 @@
                 margin-left: auto;
                 display: flex;
                 align-items: center;
-            }
-            .download-demo{
-                font-size: 12px;
-                color: #3a84ff;
             }
             .type-select{
             }
@@ -318,7 +337,7 @@
         }
         .component-list-content{
             min-height: calc(100vh - 250px);
-        
+
             .comp-type {
                 font-size: 16px;
                 color: #979ba5;

@@ -52,6 +52,7 @@
     import Draggable from '../components/draggable'
     import ResolveComponent from '../resolve-component'
     import { unitFilter } from 'shared/util.js'
+    import { autoStyle } from '@/common/util.js'
 
     export default {
         name: 'free-layout',
@@ -86,8 +87,9 @@
                         container: this.$el
                     })
                 }
+
                 const dragEle = this.$refs[childNode.componentId][0].$el
-                
+
                 this.drag = new Drag(dragEle, {
                     container: dragEle.parentNode
                 })
@@ -97,6 +99,9 @@
                 let isMoveing = false
 
                 this.drag.on('move', () => {
+                    // fix: 自由布局选中时，直接按住其中的组件然后拖动，之后再松开鼠标，自由布局不会选中的问题
+                    LC.getActiveNode() && LC.getActiveNode().activeClear()
+
                     if (!isMoveing) {
                         LC.triggerEventListener('componentMouserleave')
                         childNode.activeClear()
@@ -105,12 +110,12 @@
                     this.dragLine.check(this.drag.$elem, '[role="component-root"]')
                 }).on('end', () => {
                     this.dragLine.uncheck()
-                    const left = parseFloat(this.drag.$elem.style.left)
-                    const top = parseFloat(this.drag.$elem.style.top)
-                    
+                    const left = autoStyle(childNode, 'left', parseFloat(this.drag.$elem.style.left), true)
+                    const top = autoStyle(childNode, 'top', parseFloat(this.drag.$elem.style.top), true)
+
                     childNode.setStyle({
-                        left: left + 'px',
-                        top: top + 'px'
+                        left: left,
+                        top: top
                     })
                     childNode.active()
                     isMoveing = false
@@ -139,7 +144,7 @@
                 const $elem = this.$refs[childNode.componentId][0].$el
 
                 this.doDrag(childNode)
-                
+
                 // setTimeout 保证 drag add 事件已经处理完毕
                 setTimeout(() => {
                     const freeLayoutContainer = this.$refs[this.componentData.componentId]
@@ -147,10 +152,10 @@
                         return
                     }
                     const {
-                        width: componentWidth,
-                        height: componentHeight
+                        offsetWidth: componentWidth,
+                        offsetHeight: componentHeight
                     } = $elem
-                    
+
                     const {
                         top: containerTop,
                         right: containerRight,
@@ -165,6 +170,7 @@
 
                     let top = 0
                     let left = 0
+                    const borderWidth = 2 // border占用了2px
                     // 组件默认不能超过容器范围
                     // top 位置计算
 
@@ -176,18 +182,18 @@
                         } else {
                             top = originalTop - containerTop - 15
                         }
-                        top = Math.max(top, 10) + 'px'
+                        top = autoStyle(childNode, 'top', Math.max(top, 10), true)
                     }
                     // left 位置计算
                     if (childNode.style.left) {
                         left = unitFilter(childNode.style.left)
                     } else {
-                        if (originalLeft + componentWidth > containerRight) {
-                            left = containerRight - containerLeft - componentWidth
+                        if (originalLeft + componentWidth + borderWidth > containerRight) {
+                            left = containerRight - containerLeft - componentWidth - borderWidth
                         } else {
                             left = originalLeft - containerLeft - 15
                         }
-                        left = Math.max(left, 10) + 'px'
+                        left = autoStyle(childNode, 'left', left, true)
                     }
 
                     childNode.setStyle({

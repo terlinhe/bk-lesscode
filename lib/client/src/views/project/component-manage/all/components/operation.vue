@@ -43,6 +43,7 @@
                         accept=".zip"
                         @on-success="handleUploadSuccess" />
                 </bk-form-item>
+                <bk-link class="component-demo-link" theme="primary" @click="handleDownloadDemo">下载demo示例包</bk-link>
                 <bk-form-item label="组件名称" required property="name" error-display-type="normal">
                     <bk-input
                         :value="formData.displayName && formData.name ? `${formData.displayName}(${formData.name})` : ''"
@@ -268,6 +269,9 @@
             handleCancel () {
                 this.formData = generatorData()
                 this.$emit('update:isShow', false)
+            },
+            handleDownloadDemo () {
+                window.open('/static/bk-lesscode-component-demo.zip', '_self')
             }
         }
     }
@@ -315,9 +319,18 @@
                     color: #979BA5;
                 }
             }
+            .component-demo-link {
+                margin: -16px 90px 0;
+                .bk-link-text {
+                    font-size: 12px;
+                }
+            }
         }
         .sideslider-footer{
             padding-left: 120px;
+            .bk-button {
+                margin-right: 10px;
+            }
         }
 
         .bk-form-radio-button .bk-radio-button-text {
