@@ -29,7 +29,12 @@
                             <span v-else>--</span>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('操作人')" prop="createUser" :formatter="userFormatter" width="80" show-overflow-tooltip></bk-table-column>
+                    <!-- <bk-table-column :label="$t('操作人')" prop="createUser" :formatter="userFormatter" width="80" show-overflow-tooltip></bk-table-column> -->
+                    <bk-table-column :label="$t('操作人')" min-width="120" show-overflow-tooltip >
+                        <template slot-scope="{ row }">
+                            <display-name :value="row.createUser" />
+                        </template>
+                    </bk-table-column>
                     <bk-table-column :label="$t('table_操作结果')" prop="status" min-width="150">
                         <template slot-scope="{ row }">
                             <div class="status-result">

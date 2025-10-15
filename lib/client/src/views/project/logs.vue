@@ -92,7 +92,11 @@
                         </span>
                     </template>
                 </bk-table-column>
-                <bk-table-column :label="$t('操作人')" prop="createUser" min-width="120" show-overflow-tooltip />
+                <bk-table-column :label="$t('操作人')" min-width="120" show-overflow-tooltip >
+                    <template slot-scope="{ row }">
+                        <display-name :value="row.createUser" />
+                    </template>
+                </bk-table-column>
                 <bk-table-column :label="$t('描述')" prop="operateDesc" min-width="300" show-overflow-tooltip>
                     <template slot-scope="{ row }">
                         <span v-if="row.operateStatus">{{ $t(row.operateCodeText) }}{{ $t('成功') }}</span>

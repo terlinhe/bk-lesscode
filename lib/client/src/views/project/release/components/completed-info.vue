@@ -14,7 +14,7 @@
                     </p>
                     <p class="mr20">
                         <span>{{ $t('操作人:') }}</span>
-                        <span>{{createUser}}</span>
+                        <span><display-name :value="createUser" /></span>
                     </p>
                 </div>
                 <bk-button size="small" @click="$emit('checkCom', '')">{{ $t('返回部署页') }}</bk-button>

@@ -46,6 +46,23 @@
                 @change-checked="handleLayoutChecked"
                 @set-default="handleLayoutDefault" />
         </bk-form-item>
+        <template v-if="isMultipleTenantMode">
+            <bk-form-item :label="$t('租户类型')" required property="tenantMode" error-display-type="normal">
+                <div class="bk-button-group">
+                    <bk-button @click="formData.tenantMode = 'single'"
+                        :class="formData.tenantMode === 'single' ? 'is-selected' : ''">{{$t('单租户')}}
+                    </bk-button>
+                    <bk-button @click="formData.tenantMode = 'global'"
+                        :class="formData.tenantMode === 'global' ? 'is-selected' : ''">{{$t('全租户')}}
+                    </bk-button>
+                </div>
+            </bk-form-item>
+            <bk-form-item v-if="formData.tenantMode === 'single'" :label="$t('所属租户')" required property="tenantId" error-display-type="normal">
+                <bk-input v-model.trim="formData.tenantId" disabled >
+                </bk-input>
+            </bk-form-item>
+        </template>
+
     </bk-form>
 </template>
 
@@ -83,6 +100,7 @@
         },
         data() {
             return {
+                isMultipleTenantMode: window.BK_LESSCODE_ENABLE_TENANT === '1',
                 formData: {},
                 formRules: {
                     projectName: [
@@ -135,7 +153,13 @@
             }
         },
         created() {
-            this.formData = Object.assign({}, defaultFormData, this.propsFormData)
+            this.formData = Object.assign(
+                {},
+                defaultFormData,
+                { tenantMode: this.isMultipleTenantMode ? 'single' : null },
+                this.propsFormData,
+                { tenantId: this.isMultipleTenantMode ? this.$store.state.user?.tenantId : 'default' }
+            )
             this.formLayoutList = this.defaultLayoutList
             this.importProjectData = []
         },

@@ -21,6 +21,14 @@
                 <bk-form-item :label="$t('form_创建时间：')">
                     {{projectDetail.createTime | time}}
                 </bk-form-item>
+                <template v-if="isEnableTenant">
+                    <bk-form-item :label="$t('租户类型')">
+                        {{projectDetail.tenantMode === 'global' ? $t('全租户') : $t('单租户') }}
+                    </bk-form-item>
+                    <bk-form-item v-if="projectDetail.tenantMode === 'single'" :label="$t('租户ID')">
+                        {{projectDetail.tenantId}}
+                    </bk-form-item>
+                </template>
                 <bk-form-item class="buttons">
                     <bk-button theme="primary" @click="handleEdit">{{ $t('编辑') }}</bk-button>
                 </bk-form-item>
@@ -113,6 +121,7 @@
         },
         data () {
             return {
+                isEnableTenant: window.BK_ENV_ENABLE_TENANT === '1',
                 pageLoading: true,
                 projectDetail: {},
                 dialog: {
